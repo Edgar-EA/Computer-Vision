@@ -1,117 +1,158 @@
-# Proyecto 6: Computer Vision
-
-# Sistema de Asistencia con Reconocimiento Facial
+# Proyecto 6: Sistema de Asistencia con Reconocimiento Facial
 
 Sistema automatizado de asistencia usando **DeepFace + OpenCV**, con exportación CSV compatible con **Odoo HR Attendance** y notificaciones por **Gmail**.
 
 Todo el sistema vive en un solo archivo: `main.py`.
 
-# Instalación 
-Este proyecto requiere Python 3.11. No funcionara correctamente con versiones anteriores o superiores
-## 1. Instalar Python 3.11
-Busca la pagina oficial de Python y descarga la version 3.11 (Durante la instalacion en Windows asegurate de marcar: Add Python to PATH)
-Una vez terminada la instalacion necesitaras la ruta en donde se instalo para poder crear el entorno virtual con esa version en especifica
-Abre una consola de comandos y ejecuta:
+---
+
+## Requisitos
+
+- Python **3.11** (no compatible con versiones anteriores o posteriores)
+- Cámara web
+- Sistema operativo: Windows, Linux o macOS
+
+---
+
+## Instalación
+
+### 1. Instalar Python 3.11
+
+Descarga Python 3.11 desde [python.org](https://www.python.org/downloads/).
+
+> **Windows:** durante la instalación, marca la opción **"Add Python to PATH"**.
+
+### 2. Crear el entorno virtual con Python 3.11
+
+Primero localiza la ruta exacta del ejecutable:
 ```bash
-where python
-```
-Copia la ruta en donde salga la version 3.11
-
-## Crear entorno virtual con Python 3.11
-```bash
-C:\ruta\completa\python.exe -m venv .venv
-.venv\Scripts\activate        # Windows
-source .venv/bin/activate     # Linux/Mac
-
-# 2. Instalar dependencias
-pip3 install -r requirements.txt
-
-## Paso 1 — Registrar Personas (Enrolamiento)
-
-### Desde la cámara (recomendado)
-```bash
-python main.py enrolar "Juan Perez"
-# Presiona ESPACIO para capturar fotos | Q para terminar
+where python      # Windows
+which python3     # Linux / macOS
 ```
 
-### Manualmente
-Crea la carpeta y copia las fotos directamente:
+Copia la ruta donde aparezca la versión 3.11 y úsala para crear el entorno virtual:
+```bash
+# Windows
+C:\ruta\a\python3.11.exe -m venv .venv
+.venv\Scripts\activate
+
+# Linux / macOS
+/ruta/a/python3.11 -m venv .venv
+source .venv/bin/activate
 ```
-known_faces/
-  Juan_Perez/        ← guion bajo en lugar de espacio
-    foto1.jpg
-    foto2.jpg        ← mínimo 3-5 fotos por persona
+
+### 3. Instalar dependencias
+```bash
+pip install -r requirements.txt
 ```
 
 ---
 
-## Paso 2 — Ejecutar el Sistema
+## Uso
 
+### Paso 1 — Registrar personas (enrolamiento)
+
+**Desde la cámara (recomendado):**
+```bash
+python main.py enrolar "Juan Perez"
+# ESPACIO → capturar foto | Q → terminar
+```
+
+**Manualmente:** crea la carpeta y copia las fotos directamente:
+```
+known_faces/
+  Juan_Perez/        ← usa guion bajo en lugar de espacios
+    foto1.jpg
+    foto2.jpg        ← mínimo 3–5 fotos por persona
+```
+
+---
+
+### Paso 2 — Ejecutar el sistema
 ```bash
 python main.py
 ```
 
 La cámara se abre y comienza el reconocimiento en tiempo real.
 
-**Controles:**
-
 | Tecla | Acción |
 |-------|--------|
-| `E` | Exportar CSV + simular Odoo + enviar Gmail |
-| `Q` | Salir (exporta automáticamente al cerrar) |
+| `E` | Exportar CSV + simular importación en Odoo + enviar correo |
+| `Q` | Salir (exporta automáticamente) |
 
 ---
 
-## Flujo Completo
-
+## Flujo del sistema
 ```
 Cámara
   → DeepFace reconoce el rostro
   → SQLite registra check_in / check_out
-  → CSV exportado (formato Odoo)
+  → CSV exportado en formato Odoo
   → Simulación de importación en Odoo HR Attendance
   → Notificación Gmail con resumen + CSV adjunto
 ```
 
-**Lógica de check_in / check_out:**
-- Primera detección del día → **Entrada**
-- Segunda detección del día → **Salida**
-- Cooldown de 10800 segundos evita registros duplicados
+**Lógica de registros:**
+- Primera detección del día → **Entrada** (check_in)
+- Segunda detección del día → **Salida** (check_out)
+- Cooldown de 3 horas (10 800 s) para evitar registros duplicados
 
 ---
 
-## Importar CSV en Odoo SaaS
+## Importar CSV en Odoo
 
-El CSV generado en `exports/` es compatible directo con Odoo:
+El archivo generado en `exports/` es compatible directamente con Odoo:
 
 1. Ve a **Asistencias → Asistencias → Importar**
 2. Sube el archivo `asistencias_YYYY-MM-DD.csv`
 3. Mapea las columnas:
-   - `Employee` → **Empleado**
-   - `Check In` → **Entrada**
-   - `Check Out` → **Salida**
+
+| Columna CSV | Campo en Odoo |
+|-------------|---------------|
+| `Employee`  | Empleado      |
+| `Check In`  | Entrada       |
+| `Check Out` | Salida        |
 
 ---
 
-## Configurar Gmail (opcional)
+## Configuración de Gmail (opcional)
 
-Edita estas líneas en `main.py`:
-
+Edita las siguientes constantes en `main.py`:
 ```python
 GMAIL_SENDER   = "tu_correo@gmail.com"
-GMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"   # App Password 
+GMAIL_PASSWORD = "xxxx xxxx xxxx xxxx"   # App Password de Google
 DESTINATARIOS  = ["supervisor@empresa.com", "rrhh@empresa.com"]
 ```
 
-Sin configurar Gmail, el sistema funciona en **modo demo** e imprime en consola lo que enviaría.
+> Si no se configura Gmail, el sistema funciona en **modo demo** e imprime en consola lo que enviaría.
+
+Para generar un App Password en Google: **Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicación**.
 
 ---
 
 ## Configuración de DeepFace
 
 Edita estas constantes al inicio de `main.py`:
-
 ```python
-MODEL_NAME  = "Facenet512"  # Modelo de reconocimiento
-DETECTOR    = "opencv"      # Detector de rostros
-THRESHOLD   = 0.40          # Umbral de distancia (más bajo = más estricto)
+MODEL_NAME = "Facenet512"   # Modelo de reconocimiento facial
+DETECTOR   = "opencv"       # Backend detector de rostros
+THRESHOLD  = 0.40           # Umbral de distancia (menor = más estricto)
+```
+
+| Parámetro | Opciones disponibles |
+|-----------|----------------------|
+| `MODEL_NAME` | `Facenet512`, `VGG-Face`, `ArcFace`, `DeepFace` |
+| `DETECTOR`   | `opencv`, `retinaface`, `mtcnn`, `ssd` |
+
+---
+
+## Estructura del proyecto
+```
+proyecto/
+├── main.py               # Sistema completo
+├── requirements.txt      # Dependencias
+├── known_faces/          # Fotos de personas registradas
+│   └── Juan_Perez/
+├── exports/              # CSVs generados
+└── asistencias.db        # Base de datos SQLite
+```
